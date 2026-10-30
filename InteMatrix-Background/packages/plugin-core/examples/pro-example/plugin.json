@@ -1,0 +1,51 @@
+{
+	"schemaVersion": 2,
+	"id": "com.example.maven-pro",
+	"kind": "pro",
+	"version": "1.0.0",
+	"displayName": "Maven 工程师（示例）",
+	"description": "Pro 插件示例：安装方法 + 工具链声明 + build/test/verify 脚本，演示依赖嵌套。",
+	"publisher": { "type": "official", "name": "InteMatrix" },
+	"dependencies": [],
+	"params": [
+		{
+			"key": "mavenSettings",
+			"label": "Maven settings.xml",
+			"description": "示例密文参数",
+			"type": "textarea",
+			"kind": "secret",
+			"required": false
+		},
+		{
+			"key": "mavenMirror",
+			"label": "Maven 镜像地址",
+			"type": "url",
+			"kind": "plain",
+			"default": "https://maven.aliyun.com/repository/public"
+		}
+	],
+	"permissions": {
+		"fs": "codeRepo",
+		"exec": true,
+		"net": ["repo.maven.apache.org", "maven.aliyun.com"],
+		"secrets": ["mavenSettings"]
+	},
+	"legal": {
+		"privacy": "legal/privacy.md",
+		"terms": "legal/terms.md",
+		"thirdParty": "legal/third-party.md",
+		"collectsPersonalData": false,
+		"externalApis": ["https://repo.maven.apache.org"]
+	},
+	"install": {
+		"mode": "script",
+		"script": "install/install.sh",
+		"verify": "install/verify.sh",
+		"timeoutMs": 900000
+	},
+	"scripts": {
+		"build": "scripts/build.sh",
+		"test": "scripts/test.sh",
+		"verify": "scripts/verify.sh"
+	}
+}

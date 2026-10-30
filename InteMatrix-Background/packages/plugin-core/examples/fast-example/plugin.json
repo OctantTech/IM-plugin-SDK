@@ -1,0 +1,29 @@
+{
+	"schemaVersion": 2,
+	"id": "com.example.hello-fast",
+	"kind": "fast",
+	"version": "1.0.0",
+	"displayName": "Hello Fast（示例）",
+	"description": "Fast 插件示例：描述做法 + python 脚本工具，演示参数、法律声明与依赖写法。",
+	"publisher": { "type": "official", "name": "InteMatrix" },
+	"dependencies": [],
+	"params": [
+		{
+			"key": "apiToken",
+			"label": "API Token",
+			"description": "示例密文参数（只写不读）",
+			"type": "text",
+			"kind": "secret",
+			"required": false
+		}
+	],
+	"permissions": { "fs": "none", "exec": false, "net": [], "secrets": ["apiToken"] },
+	"legal": {
+		"privacy": "legal/privacy.md",
+		"terms": "legal/terms.md",
+		"thirdParty": "legal/third-party.md",
+		"collectsPersonalData": false,
+		"externalApis": []
+	},
+	"scripts": { "hello": "scripts/hello.py" }
+}
