@@ -162,7 +162,8 @@ export interface SecretEnvelopeRecord {
 }
 
 export interface SecretAadContext {
-	installId: string;
+	/** 授权 id（不是 installId）：同一授权的代码仓新版本可以继承同一份密文。 */
+	entitlementId: string;
 	sourcePluginId: string;
 	paramKey: string;
 }
@@ -176,7 +177,7 @@ export function deriveSm4Key(kek: Uint8Array, label: string): Uint8Array {
 
 function aadFor(context: SecretAadContext): Uint8Array {
 	return new TextEncoder().encode(
-		`plugin:param:v1|install=${context.installId}|plugin=${context.sourcePluginId}|key=${context.paramKey}`
+		`plugin:param:v1|entitlement=${context.entitlementId}|plugin=${context.sourcePluginId}|key=${context.paramKey}`
 	);
 }
 

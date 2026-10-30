@@ -9,7 +9,7 @@ import {
 	loadParamKekFromEnv
 } from './crypto';
 
-const context = { installId: 'install-1', sourcePluginId: 'plugin-1', paramKey: 'appSecret' };
+const context = { entitlementId: 'entitlement-1', sourcePluginId: 'plugin-1', paramKey: 'appSecret' };
 
 function kek(): Uint8Array {
 	return new Uint8Array(randomBytes(32));
@@ -62,7 +62,7 @@ describe('SM4-GCM 信封加密（落库）', () => {
 		expect(record.cipherAlg).toBe('sm4-gcm');
 		expect(record.valueCipher).not.toContain('超级机密');
 		expect(box.decrypt(record, context)).toBe('appSecret=超级机密');
-		expect(box.decrypt(record, { ...context, installId: 'other-install' })).toBeNull();
+		expect(box.decrypt(record, { ...context, entitlementId: 'other-entitlement' })).toBeNull();
 		expect(box.decrypt(record, { ...context, sourcePluginId: 'other-plugin' })).toBeNull();
 		expect(box.decrypt(record, { ...context, paramKey: 'other-key' })).toBeNull();
 	});
