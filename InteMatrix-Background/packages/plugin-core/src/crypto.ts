@@ -1,3 +1,4 @@
+/// <reference path="./sm-crypto.d.ts" />
 /**
  * 密文参数加密：**SM2（传输）+ SM4-GCM（落库，信封加密）**。
  *
@@ -13,7 +14,9 @@
  *   dekWrapped  = `${wrapIvHex}:${wrapCtHex}:${wrapTagHex}`
  */
 import { randomBytes as nodeRandomBytes } from 'node:crypto';
-import { sm2, sm3 } from 'sm-crypto';
+import smCrypto from 'sm-crypto';
+
+const { sm2, sm3 } = smCrypto;
 import { sm4GcmDecrypt, sm4GcmEncrypt } from './sm4';
 
 export const PARAM_CIPHER_ALG = 'sm4-gcm';
