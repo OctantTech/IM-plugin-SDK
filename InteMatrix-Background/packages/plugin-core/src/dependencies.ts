@@ -69,7 +69,13 @@ export type DependencyResolution =
 	  }
 	| {
 			ok: false;
-			code: 'not_found' | 'invalid_range' | 'no_matching_version' | 'version_conflict' | 'cycle' | 'limit';
+			code:
+				| 'not_found'
+				| 'invalid_range'
+				| 'no_matching_version'
+				| 'version_conflict'
+				| 'cycle'
+				| 'limit';
 			message: string;
 			detail?: Record<string, unknown>;
 	  };
@@ -101,7 +107,13 @@ export function resolveDependencyGraph(
 		requiredBy: string;
 	}
 	const queue: QueueItem[] = [
-		{ id: rootId, range: options.rootVersionRange ?? '*', depth: 0, optional: false, requiredBy: '(root)' }
+		{
+			id: rootId,
+			range: options.rootVersionRange ?? '*',
+			depth: 0,
+			optional: false,
+			requiredBy: '(root)'
+		}
 	];
 
 	while (queue.length > 0) {

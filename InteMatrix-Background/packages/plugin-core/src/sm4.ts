@@ -31,7 +31,7 @@ const FK = [0xa3b1bac6, 0x56aa3350, 0x677d9197, 0xb27022dc];
 const CK = new Uint32Array(32);
 for (let i = 0; i < 32; i++) {
 	const b = [4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3].map((value) => (value * 7) % 256);
-	CK[i] = (((b[0]! << 24) | (b[1]! << 16) | (b[2]! << 8) | b[3]!) >>> 0);
+	CK[i] = ((b[0]! << 24) | (b[1]! << 16) | (b[2]! << 8) | b[3]!) >>> 0;
 }
 
 function rotl(x: number, n: number): number {
@@ -82,7 +82,9 @@ export function sm4KeySchedule(key: Uint8Array): Uint32Array {
 	for (let i = 0; i < 4; i++) k[i] = readU32BE(key, i * 4) ^ FK[i]!;
 	let tmp = k;
 	for (let i = 0; i < 32; i++) {
-		const next = (tmp[i % 4]! ^ tPrime(tmp[(i + 1) % 4]! ^ tmp[(i + 2) % 4]! ^ tmp[(i + 3) % 4]! ^ CK[i]!)) >>> 0;
+		const next =
+			(tmp[i % 4]! ^ tPrime(tmp[(i + 1) % 4]! ^ tmp[(i + 2) % 4]! ^ tmp[(i + 3) % 4]! ^ CK[i]!)) >>>
+			0;
 		rk[i] = next;
 		tmp[i % 4] = next;
 	}
@@ -95,8 +97,7 @@ function cryptBlock(rk: Uint32Array, block: Uint8Array, decrypt: boolean): Uint8
 	for (let i = 0; i < 4; i++) x[i] = readU32BE(block, i * 4);
 	for (let i = 0; i < 32; i++) {
 		const key = decrypt ? rk[31 - i]! : rk[i]!;
-		x[i + 4] =
-			(x[i]! ^ t(x[i + 1]! ^ x[i + 2]! ^ x[i + 3]! ^ key)) >>> 0;
+		x[i + 4] = (x[i]! ^ t(x[i + 1]! ^ x[i + 2]! ^ x[i + 3]! ^ key)) >>> 0;
 	}
 	const out = new Uint8Array(16);
 	for (let i = 0; i < 4; i++) writeU32BE(out, i * 4, x[35 - i]!);
@@ -197,7 +198,8 @@ export function gcmEncrypt(
 		const padded = new Uint8Array(Math.ceil(iv.length / 16) * 16 + 16);
 		padded.set(iv);
 		const bits = BigInt(iv.length) * 8n;
-		for (let i = 0; i < 8; i++) padded[padded.length - 8 - i] = Number((bits >> BigInt(i * 8)) & 0xffn);
+		for (let i = 0; i < 8; i++)
+			padded[padded.length - 8 - i] = Number((bits >> BigInt(i * 8)) & 0xffn);
 		j0.set(ghash(h, new Uint8Array(), padded));
 	}
 	const counter = j0.slice();
@@ -233,7 +235,8 @@ export function gcmDecrypt(
 		const padded = new Uint8Array(Math.ceil(iv.length / 16) * 16 + 16);
 		padded.set(iv);
 		const bits = BigInt(iv.length) * 8n;
-		for (let i = 0; i < 8; i++) padded[padded.length - 8 - i] = Number((bits >> BigInt(i * 8)) & 0xffn);
+		for (let i = 0; i < 8; i++)
+			padded[padded.length - 8 - i] = Number((bits >> BigInt(i * 8)) & 0xffn);
 		j0.set(ghash(h, new Uint8Array(), padded));
 	}
 	const s = ghash(h, aad, ciphertext);

@@ -13,7 +13,12 @@ function basePro() {
 			{ key: 'jdkVersion', label: 'JDK', type: 'select', kind: 'plain', options: ['17', '21'] },
 			{ key: 'mavenSettings', label: 'settings.xml', type: 'textarea', kind: 'secret' }
 		],
-		permissions: { fs: 'codeRepo', exec: true, net: ['repo.maven.apache.org'], secrets: ['mavenSettings'] },
+		permissions: {
+			fs: 'codeRepo',
+			exec: true,
+			net: ['repo.maven.apache.org'],
+			secrets: ['mavenSettings']
+		},
 		legal: {
 			privacy: 'legal/privacy.md',
 			terms: 'legal/terms.md',
@@ -78,7 +83,9 @@ describe('plugin.json v2 校验', () => {
 		expect(validatePluginManifest(undeclared).ok).toBe(false);
 
 		const withDefault = baseFast();
-		withDefault.params = [{ key: 'apiToken', label: 'Token', kind: 'secret', default: 'x' } as never];
+		withDefault.params = [
+			{ key: 'apiToken', label: 'Token', kind: 'secret', default: 'x' } as never
+		];
 		expect(validatePluginManifest(withDefault).ok).toBe(false);
 	});
 

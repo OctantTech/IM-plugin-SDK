@@ -90,14 +90,23 @@ export const pluginInstallSchema = z
 			})
 			.optional(),
 		verify: z.string().regex(relativePathPattern).optional(),
-		timeoutMs: z.number().int().min(1000).max(30 * 60 * 1000).default(15 * 60 * 1000)
+		timeoutMs: z
+			.number()
+			.int()
+			.min(1000)
+			.max(30 * 60 * 1000)
+			.default(15 * 60 * 1000)
 	})
 	.superRefine((install, ctx) => {
 		if (install.mode !== 'bundle' && !install.script) {
 			ctx.addIssue({ code: 'custom', message: 'install 模式需要 script', path: ['script'] });
 		}
 		if (install.mode !== 'script' && !install.bundle) {
-			ctx.addIssue({ code: 'custom', message: 'install 模式需要 bundle/toolchain', path: ['bundle'] });
+			ctx.addIssue({
+				code: 'custom',
+				message: 'install 模式需要 bundle/toolchain',
+				path: ['bundle']
+			});
 		}
 	});
 
@@ -154,7 +163,11 @@ export const pluginManifestSchema = z
 				ctx.addIssue({ code: 'custom', message: 'Fast 插件不允许 install', path: ['install'] });
 			}
 			if (manifest.permissions.exec) {
-				ctx.addIssue({ code: 'custom', message: 'Fast 插件不允许执行权限', path: ['permissions', 'exec'] });
+				ctx.addIssue({
+					code: 'custom',
+					message: 'Fast 插件不允许执行权限',
+					path: ['permissions', 'exec']
+				});
 			}
 			for (const [name, path] of Object.entries(manifest.scripts)) {
 				if (!/\.(py|ts|mts|cts)$/.test(path)) {
@@ -171,7 +184,11 @@ export const pluginManifestSchema = z
 		const keys = new Set<string>();
 		for (const [index, param] of manifest.params.entries()) {
 			if (keys.has(param.key)) {
-				ctx.addIssue({ code: 'custom', message: `参数 key 重复：${param.key}`, path: ['params', index] });
+				ctx.addIssue({
+					code: 'custom',
+					message: `参数 key 重复：${param.key}`,
+					path: ['params', index]
+				});
 			}
 			keys.add(param.key);
 			if (param.kind === 'secret' && !manifest.permissions.secrets.includes(param.key)) {
@@ -229,8 +246,7 @@ export type PluginParamDeclaration = z.infer<typeof pluginParamSchema>;
 export type PluginDependencyDeclaration = z.infer<typeof pluginDependencySchema>;
 
 export type ManifestValidationResult =
-	| { ok: true; manifest: PluginManifest }
-	| { ok: false; issues: string[] };
+	{ ok: true; manifest: PluginManifest } | { ok: false; issues: string[] };
 
 /** 校验 plugin.json（原始 JSON 对象）。 */
 export function validatePluginManifest(raw: unknown): ManifestValidationResult {

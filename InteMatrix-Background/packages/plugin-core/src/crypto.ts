@@ -26,11 +26,7 @@ export class ParamCryptoError extends Error {
 	constructor(
 		message: string,
 		readonly code:
-			| 'invalid_key'
-			| 'decrypt_failed'
-			| 'envelope_invalid'
-			| 'tag_mismatch'
-			| 'stale_timestamp'
+			'invalid_key' | 'decrypt_failed' | 'envelope_invalid' | 'tag_mismatch' | 'stale_timestamp'
 	) {
 		super(message);
 		this.name = 'ParamCryptoError';
@@ -78,7 +74,11 @@ export class Sm2Keyring {
 
 	/** 前端可拉取的公钥列表（当前在前）。 */
 	publicKeys(): Sm2PublicKeyInfo[] {
-		return this.keys.map((entry) => ({ alg: SM2_ALG, keyId: entry.keyId, publicKey: entry.publicKey }));
+		return this.keys.map((entry) => ({
+			alg: SM2_ALG,
+			keyId: entry.keyId,
+			publicKey: entry.publicKey
+		}));
 	}
 
 	private keyFor(keyId?: string) {
@@ -129,11 +129,7 @@ export function encryptSm2Payload(
 	publicKey: string,
 	payload: { pluginId: string; key: string; value: string; ts?: number }
 ): string {
-	return sm2.doEncrypt(
-		JSON.stringify({ ...payload, ts: payload.ts ?? Date.now() }),
-		publicKey,
-		1
-	);
+	return sm2.doEncrypt(JSON.stringify({ ...payload, ts: payload.ts ?? Date.now() }), publicKey, 1);
 }
 
 /** 生成一对 SM2 密钥（部署脚本用）。 */
@@ -160,6 +156,12 @@ export interface SecretEnvelopeRecord {
 	cipherIv: string;
 	dekWrapped: string;
 }
+
+/**
+ * 从库里读回的信封：`plugin_params.cipher_*` 都是 text 列，读出来是 `string`，
+ * 不能假定还是 `PARAM_CIPHER_ALG` 字面量 —— 算法校验由 `decrypt()` 自己做。
+ */
+export type StoredSecretEnvelope = Omit<SecretEnvelopeRecord, 'cipherAlg'> & { cipherAlg: string };
 
 export interface SecretAadContext {
 	/** 授权 id（不是 installId）：同一授权的代码仓新版本可以继承同一份密文。 */
@@ -239,7 +241,7 @@ export class ParamSecretBox {
 	}
 
 	/** 解密；tag 不匹配 / 结构损坏 → null（调用方给统一错误，不泄露细节）。 */
-	decrypt(record: SecretEnvelopeRecord, context: SecretAadContext): string | null {
+	decrypt(record: StoredSecretEnvelope, context: SecretAadContext): string | null {
 		if (record.cipherAlg !== PARAM_CIPHER_ALG) return null;
 		try {
 			const [valueCtHex, valueTagHex] = record.valueCipher.split(':');

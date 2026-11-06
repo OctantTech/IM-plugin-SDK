@@ -3,8 +3,15 @@ import { resolveDependencyGraph, type CatalogPlugin, type CatalogLookup } from '
 
 function plugin(
 	id: string,
-	versions: Array<{ version: string; dependencies?: Array<{ id: string; version: string; optional?: boolean }> }>,
-	options: { licenseType?: CatalogPlugin['licenseType']; priceCents?: number; displayName?: string } = {}
+	versions: Array<{
+		version: string;
+		dependencies?: Array<{ id: string; version: string; optional?: boolean }>;
+	}>,
+	options: {
+		licenseType?: CatalogPlugin['licenseType'];
+		priceCents?: number;
+		displayName?: string;
+	} = {}
 ): CatalogPlugin {
 	return {
 		id,
@@ -46,10 +53,14 @@ describe('插件依赖解析（嵌套 + 版本 + 计费）', () => {
 
 	it('付费依赖统一计费：主插件 + 未拥有的付费依赖；已拥有的不重复收费', () => {
 		const lookup = lookupOf(
-			plugin('fullstack', [{ version: '1.0.0', dependencies: [{ id: 'java', version: '^1.0.0' }] }], {
-				licenseType: 'perpetual',
-				priceCents: 9900
-			}),
+			plugin(
+				'fullstack',
+				[{ version: '1.0.0', dependencies: [{ id: 'java', version: '^1.0.0' }] }],
+				{
+					licenseType: 'perpetual',
+					priceCents: 9900
+				}
+			),
 			plugin('java', [{ version: '1.0.0' }], { licenseType: 'perpetual', priceCents: 4900 })
 		);
 		const all = resolveDependencyGraph('fullstack', lookup);
@@ -68,10 +79,14 @@ describe('插件依赖解析（嵌套 + 版本 + 计费）', () => {
 
 	it('按安装次数授权：返回每次安装要消耗的次数', () => {
 		const lookup = lookupOf(
-			plugin('pack-root', [{ version: '1.0.0', dependencies: [{ id: 'pack-dep', version: '^1.0.0' }] }], {
-				licenseType: 'install_pack',
-				priceCents: 3000
-			}),
+			plugin(
+				'pack-root',
+				[{ version: '1.0.0', dependencies: [{ id: 'pack-dep', version: '^1.0.0' }] }],
+				{
+					licenseType: 'install_pack',
+					priceCents: 3000
+				}
+			),
 			plugin('pack-dep', [{ version: '1.0.0' }], { licenseType: 'install_pack', priceCents: 1000 })
 		);
 		const resolved = resolveDependencyGraph('pack-root', lookup);
@@ -130,7 +145,9 @@ describe('插件依赖解析（嵌套 + 版本 + 计费）', () => {
 
 		const missing = resolveDependencyGraph(
 			'y',
-			lookupOf(plugin('y', [{ version: '1.0.0', dependencies: [{ id: 'ghost', version: '^1.0.0' }] }]))
+			lookupOf(
+				plugin('y', [{ version: '1.0.0', dependencies: [{ id: 'ghost', version: '^1.0.0' }] }])
+			)
 		);
 		expect(missing.ok).toBe(false);
 		if (!missing.ok) expect(missing.code).toBe('not_found');

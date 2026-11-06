@@ -9,7 +9,11 @@ import {
 	loadParamKekFromEnv
 } from './crypto';
 
-const context = { entitlementId: 'entitlement-1', sourcePluginId: 'plugin-1', paramKey: 'appSecret' };
+const context = {
+	entitlementId: 'entitlement-1',
+	sourcePluginId: 'plugin-1',
+	paramKey: 'appSecret'
+};
 
 function kek(): Uint8Array {
 	return new Uint8Array(randomBytes(32));
@@ -18,7 +22,9 @@ function kek(): Uint8Array {
 describe('SM2 传输加密（前端加密 → 服务端解密）', () => {
 	it('公钥加密 / 私钥解密，载荷结构 + 时间窗校验', () => {
 		const pair = generateSm2KeyPair();
-		const keyring = new Sm2Keyring([{ keyId: 'k1', privateKey: pair.privateKey, publicKey: pair.publicKey }]);
+		const keyring = new Sm2Keyring([
+			{ keyId: 'k1', privateKey: pair.privateKey, publicKey: pair.publicKey }
+		]);
 		const cipher = encryptSm2Payload(pair.publicKey, {
 			pluginId: 'com.example.feishu',
 			key: 'appSecret',
@@ -34,7 +40,9 @@ describe('SM2 传输加密（前端加密 → 服务端解密）', () => {
 	it('过期时间戳拒绝；未知 keyId 拒绝；错误私钥解密失败', () => {
 		const pair = generateSm2KeyPair();
 		const other = generateSm2KeyPair();
-		const keyring = new Sm2Keyring([{ keyId: 'k1', privateKey: pair.privateKey, publicKey: pair.publicKey }]);
+		const keyring = new Sm2Keyring([
+			{ keyId: 'k1', privateKey: pair.privateKey, publicKey: pair.publicKey }
+		]);
 		const stale = encryptSm2Payload(pair.publicKey, {
 			pluginId: 'p',
 			key: 'k',
@@ -43,14 +51,20 @@ describe('SM2 传输加密（前端加密 → 服务端解密）', () => {
 		});
 		expect(() => keyring.decryptParamPayload(stale)).toThrowError(ParamCryptoError);
 		expect(() =>
-			keyring.decryptParamPayload(encryptSm2Payload(other.publicKey, { pluginId: 'p', key: 'k', value: 'v' }), {
-				keyId: 'k1'
-			})
+			keyring.decryptParamPayload(
+				encryptSm2Payload(other.publicKey, { pluginId: 'p', key: 'k', value: 'v' }),
+				{
+					keyId: 'k1'
+				}
+			)
 		).toThrowError(ParamCryptoError);
 		expect(() =>
-			keyring.decryptParamPayload(encryptSm2Payload(pair.publicKey, { pluginId: 'p', key: 'k', value: 'v' }), {
-				keyId: 'missing'
-			})
+			keyring.decryptParamPayload(
+				encryptSm2Payload(pair.publicKey, { pluginId: 'p', key: 'k', value: 'v' }),
+				{
+					keyId: 'missing'
+				}
+			)
 		).toThrowError(/unknown SM2 keyId/);
 	});
 });
@@ -80,7 +94,9 @@ describe('SM4-GCM 信封加密（落库）', () => {
 	it('KEK 从环境变量读取（hex / base64），非法长度报错', () => {
 		const raw = randomBytes(32);
 		const hexValue = raw.toString('hex');
-		expect(loadParamKekFromEnv({ PLUGIN_PARAM_KEK: hexValue, PLUGIN_PARAM_KEK_ID: 'k9' })).toMatchObject({
+		expect(
+			loadParamKekFromEnv({ PLUGIN_PARAM_KEK: hexValue, PLUGIN_PARAM_KEK_ID: 'k9' })
+		).toMatchObject({
 			keyId: 'k9'
 		});
 		expect(loadParamKekFromEnv({ PLUGIN_PARAM_KEK: raw.toString('base64') }).kek.length).toBe(32);
