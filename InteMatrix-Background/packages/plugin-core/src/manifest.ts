@@ -276,3 +276,179 @@ export function validatePackageFileName(
 	}
 	return { ok: true };
 }
+
+/* ───────────────────────────── 统一插件（v4） ───────────────────────────── */
+
+/**
+ * **sandbox 统一后的插件契约**：不再有 `kind: pro|fast`，统一 `.plugin` 包。
+ * 执行能力由 capabilities 声明，由同一个 sandbox 执行；免费/付费只在授权层。
+ *
+ * v2 的 `validatePluginManifest` / `.proplugin` / `.fastplugin` 继续作为 legacy 兼容，
+ * 新上架只接受本 schema。
+ */
+export const UNIFIED_PLUGIN_PACKAGE_EXTENSION = '.plugin';
+
+export const unifiedPluginPermissionsSchema = z.object({
+	exec: z.boolean().default(false),
+	net: z
+		.array(z.string().regex(hostnamePattern, 'net 只允许主机名[:端口]，不要写协议'))
+		.max(50)
+		.default([]),
+	secrets: z.array(z.string()).max(50).default([])
+});
+
+export const unifiedPluginToolSchema = z.object({
+	name: z.string().regex(/^[a-z][a-z0-9._-]*$/, 'tool name 必须小写字母/数字/._-'),
+	displayName: z.string().min(1).max(80).optional(),
+	description: z.string().max(2000).default(''),
+	inputSchema: z.record(z.string(), z.unknown()).optional(),
+	aliases: z.array(z.string().min(1).max(120)).max(20).default([])
+});
+
+export const unifiedPluginSkillSchema = z.object({
+	name: z.string().regex(/^[a-z][a-z0-9._-]*$/, 'skill name 必须小写字母/数字/._-'),
+	description: z.string().max(1000).default(''),
+	path: z.string().regex(relativePathPattern),
+	requires: z.array(z.string().min(1).max(160)).max(20).default([])
+});
+
+export const unifiedPluginRuntimeSchema = z.object({
+	id: z.string().regex(/^[a-z][a-z0-9._-]*$/),
+	version: z.string().min(1).max(80),
+	install: z.string().regex(relativePathPattern).optional(),
+	verify: z.string().regex(relativePathPattern).optional()
+});
+
+export const unifiedPluginCapabilitiesSchema = z
+	.object({
+		tools: z.array(unifiedPluginToolSchema).max(64).default([]),
+		skills: z.array(unifiedPluginSkillSchema).max(64).default([]),
+		runtime: unifiedPluginRuntimeSchema.optional(),
+		provider: z.record(z.string(), z.unknown()).optional(),
+		hostApis: z
+			.array(z.enum(['files', 'exec', 'secrets', 'apiKeys', 'events', 'runtime']))
+			.max(20)
+			.default([])
+	})
+	.default({ tools: [], skills: [], hostApis: [] });
+
+export const unifiedPluginManifestSchema = z
+	.object({
+		schemaVersion: z.literal(4),
+		id: z.string().min(3).max(120).regex(idPattern, 'id 必须是小写字母/数字/._-'),
+		version: z.string().regex(semverPattern, 'version 必须是语义化版本'),
+		displayName: z.string().min(1).max(80),
+		description: z.string().max(500).default(''),
+		longDescription: z.string().max(5000).default(''),
+		icon: z
+			.object({
+				light: z.string().regex(relativePathPattern),
+				dark: z.string().regex(relativePathPattern).optional()
+			})
+			.optional(),
+		publisher: z
+			.object({
+				type: z.enum(['official', 'developer']).default('developer'),
+				name: z.string().max(120).optional()
+			})
+			.default({ type: 'developer' }),
+		/** 安装范围；provider 等用户级能力用 user。 */
+		scope: z.enum(['project', 'user']).default('project'),
+		compat: z
+			.object({ host: z.string().max(64).optional(), sandbox: z.string().max(64).optional() })
+			.optional(),
+		pluginMd: z.string().regex(relativePathPattern).default('PLUGIN.md'),
+		dependencies: z.array(pluginDependencySchema).max(32).default([]),
+		params: z.array(pluginParamSchema).max(64).default([]),
+		permissions: unifiedPluginPermissionsSchema.default({ exec: false, net: [], secrets: [] }),
+		legal: pluginLegalSchema,
+		install: pluginInstallSchema.optional(),
+		scripts: z.record(z.string().min(1).max(40), z.string().regex(relativePathPattern)).default({}),
+		capabilities: unifiedPluginCapabilitiesSchema
+	})
+	.superRefine((manifest, ctx) => {
+		const keys = new Set<string>();
+		for (const [index, param] of manifest.params.entries()) {
+			if (keys.has(param.key)) {
+				ctx.addIssue({
+					code: 'custom',
+					message: `参数 key 重复：${param.key}`,
+					path: ['params', index]
+				});
+			}
+			keys.add(param.key);
+			if (param.kind === 'secret' && !manifest.permissions.secrets.includes(param.key)) {
+				ctx.addIssue({
+					code: 'custom',
+					message: `secret 参数 ${param.key} 必须声明在 permissions.secrets`,
+					path: ['params', index]
+				});
+			}
+		}
+		for (const secret of manifest.permissions.secrets) {
+			if (!manifest.params.some((param) => param.key === secret && param.kind === 'secret')) {
+				ctx.addIssue({
+					code: 'custom',
+					message: `permissions.secrets 里的 ${secret} 没有对应 secret 参数`,
+					path: ['permissions', 'secrets']
+				});
+			}
+		}
+		const depIds = new Set<string>();
+		for (const [index, dependency] of manifest.dependencies.entries()) {
+			if (dependency.id === manifest.id) {
+				ctx.addIssue({ code: 'custom', message: '不能依赖自己', path: ['dependencies', index] });
+			}
+			if (depIds.has(dependency.id)) {
+				ctx.addIssue({
+					code: 'custom',
+					message: `依赖重复：${dependency.id}`,
+					path: ['dependencies', index]
+				});
+			}
+			depIds.add(dependency.id);
+		}
+		for (const [name, path] of [
+			['privacy', manifest.legal.privacy],
+			['terms', manifest.legal.terms],
+			['thirdParty', manifest.legal.thirdParty]
+		] as const) {
+			if (!path.startsWith('legal/') || !path.endsWith('.md')) {
+				ctx.addIssue({
+					code: 'custom',
+					message: `${name} 必须是 legal/*.md`,
+					path: ['legal', name]
+				});
+			}
+		}
+	});
+
+export type UnifiedPluginManifest = z.infer<typeof unifiedPluginManifestSchema>;
+
+export type UnifiedManifestValidationResult =
+	{ ok: true; manifest: UnifiedPluginManifest } | { ok: false; issues: string[] };
+
+export function validateUnifiedPluginManifest(raw: unknown): UnifiedManifestValidationResult {
+	const parsed = unifiedPluginManifestSchema.safeParse(raw);
+	if (parsed.success) return { ok: true, manifest: parsed.data };
+	return {
+		ok: false,
+		issues: parsed.error.issues.map((issue) => {
+			const path = issue.path.length ? issue.path.join('.') : '(root)';
+			return `${path}: ${issue.message}`;
+		})
+	};
+}
+
+/** `.plugin` 文件名校验（v4 统一包）。 */
+export function validateUnifiedPackageFileName(
+	fileName: string
+): { ok: true } | { ok: false; issue: string } {
+	if (!fileName.toLowerCase().endsWith(UNIFIED_PLUGIN_PACKAGE_EXTENSION)) {
+		return {
+			ok: false,
+			issue: `统一插件包必须以 ${UNIFIED_PLUGIN_PACKAGE_EXTENSION} 结尾（当前：${fileName}）`
+		};
+	}
+	return { ok: true };
+}

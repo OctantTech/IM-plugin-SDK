@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { validatePackageFileName, validatePluginManifest } from './manifest';
+import {
+	validatePackageFileName,
+	validatePluginManifest,
+	validateUnifiedPackageFileName,
+	validateUnifiedPluginManifest
+} from './manifest';
 
 function basePro() {
 	return {
@@ -108,5 +113,59 @@ describe('plugin.json v2 校验', () => {
 		expect(validatePackageFileName('demo.fastplugin', 'fast').ok).toBe(true);
 		expect(validatePackageFileName('demo.fastplugin', 'pro').ok).toBe(false);
 		expect(validatePackageFileName('demo.zip', 'fast').ok).toBe(false);
+	});
+});
+
+function baseUnified() {
+	return {
+		schemaVersion: 4,
+		id: 'com.intematrix.document-parser',
+		version: '1.0.0',
+		displayName: '文档解析',
+		description: 'PDF/DOCX 解析',
+		publisher: { type: 'official' },
+		scope: 'project',
+		dependencies: [{ id: 'com.intematrix.runtime.python', version: '^1.0.0' }],
+		params: [{ key: 'apiToken', label: 'Token', kind: 'secret' }],
+		permissions: { exec: true, net: [], secrets: ['apiToken'] },
+		legal: {
+			privacy: 'legal/privacy.md',
+			terms: 'legal/terms.md',
+			thirdParty: 'legal/third-party.md'
+		},
+		capabilities: {
+			tools: [{ name: 'doc.parse_pdf', description: 'parse pdf' }],
+			skills: [{ name: 'parse-documents', path: 'skills/parse.md', requires: ['runtime:python'] }],
+			runtime: { id: 'python', version: '3.12' },
+			hostApis: ['files', 'exec']
+		}
+	};
+}
+
+describe('plugin.json v4 统一插件', () => {
+	it('通过且不再有 kind / fs 权限', () => {
+		const result = validateUnifiedPluginManifest(baseUnified());
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.manifest.scope).toBe('project');
+		expect(result.manifest.capabilities.tools[0]?.name).toBe('doc.parse_pdf');
+		expect(result.manifest.capabilities.skills[0]?.requires).toContain('runtime:python');
+		expect('kind' in result.manifest).toBe(false);
+		expect('fs' in result.manifest.permissions).toBe(false);
+	});
+
+	it('拒绝 .proplugin / .fastplugin，只接受 .plugin', () => {
+		expect(validateUnifiedPackageFileName('x.plugin').ok).toBe(true);
+		expect(validateUnifiedPackageFileName('x.proplugin').ok).toBe(false);
+		expect(validateUnifiedPackageFileName('x.fastplugin').ok).toBe(false);
+	});
+
+	it('仍校验 secret 声明与法律文档', () => {
+		const badSecret = baseUnified();
+		badSecret.permissions.secrets = [];
+		expect(validateUnifiedPluginManifest(badSecret).ok).toBe(false);
+		const badLegal = baseUnified();
+		badLegal.legal.privacy = 'privacy.md';
+		expect(validateUnifiedPluginManifest(badLegal).ok).toBe(false);
 	});
 });
