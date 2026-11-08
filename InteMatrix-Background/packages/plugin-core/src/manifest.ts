@@ -344,7 +344,9 @@ export const unifiedPluginRuntimeSchema = z.object({
 	id: z.string().regex(/^[a-z][a-z0-9._-]*$/),
 	version: z.string().min(1).max(80),
 	install: z.string().regex(relativePathPattern).optional(),
-	verify: z.string().regex(relativePathPattern).optional()
+	verify: z.string().regex(relativePathPattern).optional(),
+	/** 验收命令：安装后必须能执行（例如 `python3 --version`）。 */
+	testCommand: z.string().min(1).max(300).optional()
 });
 
 export const unifiedPluginCapabilitiesSchema = z
