@@ -382,6 +382,13 @@ export const unifiedPluginManifestSchema = z
 				name: z.string().max(120).optional()
 			})
 			.default({ type: 'developer' }),
+		/** 授权/定价层（与插件类型无关）：官方环境/数据插件必须 free。 */
+		pricing: z
+			.object({
+				model: z.enum(['free', 'paid']).default('free'),
+				note: z.string().max(500).default('')
+			})
+			.default({ model: 'free', note: '' }),
 		/** 安装范围；provider 等用户级能力用 user。 */
 		scope: z.enum(['project', 'user']).default('project'),
 		compat: z
