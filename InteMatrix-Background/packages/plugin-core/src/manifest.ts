@@ -297,6 +297,34 @@ export const unifiedPluginPermissionsSchema = z.object({
 	secrets: z.array(z.string()).max(50).default([])
 });
 
+export const unifiedPluginInstallSchema = z
+	.object({
+		mode: z.enum(['script', 'script+bundle']).default('script'),
+		/** **统一插件必须有 install.sh**；这是宿主安装/准备环境的唯一入口。 */
+		script: z
+			.string()
+			.regex(relativePathPattern)
+			.refine((value) => value.endsWith('.sh'), '统一插件 install 脚本必须是 .sh'),
+		bundle: z
+			.object({
+				path: z.string().regex(relativePathPattern),
+				platforms: z.array(z.string().min(1)).min(1)
+			})
+			.optional(),
+		verify: z.string().regex(relativePathPattern).optional(),
+		timeoutMs: z
+			.number()
+			.int()
+			.min(1000)
+			.max(30 * 60 * 1000)
+			.default(15 * 60 * 1000)
+	})
+	.superRefine((install, ctx) => {
+		if (install.mode === 'script+bundle' && !install.bundle) {
+			ctx.addIssue({ code: 'custom', message: 'script+bundle 需要 bundle', path: ['bundle'] });
+		}
+	});
+
 export const unifiedPluginToolSchema = z.object({
 	name: z.string().regex(/^[a-z][a-z0-9._-]*$/, 'tool name 必须小写字母/数字/._-'),
 	displayName: z.string().min(1).max(80).optional(),
@@ -362,7 +390,8 @@ export const unifiedPluginManifestSchema = z
 		params: z.array(pluginParamSchema).max(64).default([]),
 		permissions: unifiedPluginPermissionsSchema.default({ exec: false, net: [], secrets: [] }),
 		legal: pluginLegalSchema,
-		install: pluginInstallSchema.optional(),
+		/** 统一插件一律要求 install.sh，不再有“无安装”插件。 */
+		install: unifiedPluginInstallSchema,
 		scripts: z.record(z.string().min(1).max(40), z.string().regex(relativePathPattern)).default({}),
 		capabilities: unifiedPluginCapabilitiesSchema
 	})

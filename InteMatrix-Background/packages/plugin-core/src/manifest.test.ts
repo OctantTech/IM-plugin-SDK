@@ -128,6 +128,7 @@ function baseUnified() {
 		dependencies: [{ id: 'com.intematrix.runtime.python', version: '^1.0.0' }],
 		params: [{ key: 'apiToken', label: 'Token', kind: 'secret' }],
 		permissions: { exec: true, net: [], secrets: ['apiToken'] },
+		install: { mode: 'script', script: 'install/install.sh' },
 		legal: {
 			privacy: 'legal/privacy.md',
 			terms: 'legal/terms.md',
