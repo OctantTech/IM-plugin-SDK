@@ -330,7 +330,18 @@ export const unifiedPluginToolSchema = z.object({
 	displayName: z.string().min(1).max(80).optional(),
 	description: z.string().max(2000).default(''),
 	inputSchema: z.record(z.string(), z.unknown()).optional(),
-	aliases: z.array(z.string().min(1).max(120)).max(20).default([])
+	aliases: z.array(z.string().min(1).max(120)).max(20).default([]),
+	/** 插件内可执行入口（相对插件根），由 sandbox 执行；P4 工具执行器读取。 */
+	entry: z.string().regex(relativePathPattern).optional(),
+	/** 入口运行时；缺省按扩展名推断。 */
+	runtime: z.enum(['node', 'bun', 'python', 'shell']).optional(),
+	/** 单次执行超时。 */
+	timeoutMs: z
+		.number()
+		.int()
+		.min(1000)
+		.max(30 * 60 * 1000)
+		.optional()
 });
 
 export const unifiedPluginSkillSchema = z.object({
