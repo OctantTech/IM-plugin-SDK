@@ -351,6 +351,19 @@ export const unifiedPluginSkillSchema = z.object({
 	requires: z.array(z.string().min(1).max(160)).max(20).default([])
 });
 
+export const unifiedPluginHookSchema = z.object({
+	name: z.string().regex(/^[a-z][a-z0-9._-]*$/),
+	event: z.enum(['install', 'uninstall', 'before_tool', 'after_tool']),
+	entry: z.string().regex(relativePathPattern),
+	runtime: z.enum(['node', 'bun', 'python', 'shell']).optional(),
+	timeoutMs: z
+		.number()
+		.int()
+		.min(1000)
+		.max(30 * 60 * 1000)
+		.optional()
+});
+
 export const unifiedPluginRuntimeSchema = z.object({
 	id: z.string().regex(/^[a-z][a-z0-9._-]*$/),
 	version: z.string().min(1).max(80),
@@ -364,6 +377,7 @@ export const unifiedPluginCapabilitiesSchema = z
 	.object({
 		tools: z.array(unifiedPluginToolSchema).max(64).default([]),
 		skills: z.array(unifiedPluginSkillSchema).max(64).default([]),
+		hooks: z.array(unifiedPluginHookSchema).max(64).default([]),
 		runtime: unifiedPluginRuntimeSchema.optional(),
 		provider: z.record(z.string(), z.unknown()).optional(),
 		hostApis: z
@@ -371,7 +385,7 @@ export const unifiedPluginCapabilitiesSchema = z
 			.max(20)
 			.default([])
 	})
-	.default({ tools: [], skills: [], hostApis: [] });
+	.default({ tools: [], skills: [], hooks: [], hostApis: [] });
 
 export const unifiedPluginManifestSchema = z
 	.object({
