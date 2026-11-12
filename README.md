@@ -2,12 +2,17 @@
 
 InteMatrix 插件开发者 SDK。提供插件 manifest 校验、工具/Provider/Runtime 定义、脚本协议与宿主 API 类型。
 
+私有发布在 GitHub Packages（`npm.pkg.github.com`，仅组织成员可读）：
+
 ```bash
-bun add github:OctantTech/IM-plugin-SDK#v1.0.0
+# ~/.npmrc
+# @octanttech:registry=https://npm.pkg.github.com
+# //npm.pkg.github.com/:_authToken=<GITHUB_TOKEN>
+bun add @octanttech/plugin-runtime-sdk@^1.0.0
 ```
 
 ```ts
-import { definePlugin, defineTool } from '@intematrix-background/plugin-sdk';
+import { definePlugin, defineTool } from '@octanttech/plugin-runtime-sdk';
 ```
 
 ## 目录
